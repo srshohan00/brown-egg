@@ -247,16 +247,29 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
     const stockRef = db.collection('shop').doc('stock');
     const ordersCol = db.collection('orders');
 
-    document.getElementById('gateBtn').onclick = () => {
-      if (document.getElementById('passInput').value === ADMIN_PASS) {
+    document.getElementById('loginBtn').onclick = async () => {
+    
+      const email = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+      const error = document.getElementById('gateErr');
+      error.textContent = '';
+    
+      if (!email || !password) {
+        error.textContent = 'Email এবং password দিন।';
+        return;
+      }
+    
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
         document.getElementById('gate').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         initApp();
-      } else {
-        document.getElementById('gateErr').textContent = 'ভুল পাসকোড';
+      } catch (err) {
+        error.textContent = 'Email অথবা password ভুল।';
       }
     };
 
