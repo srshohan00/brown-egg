@@ -191,8 +191,12 @@
 
   <div id="gate">
     <h1>এডমিন লগইন</h1>
-    <input type="password" id="passInput" placeholder="পাসকোড">
-    <button id="gateBtn">প্রবেশ করুন</button>
+    <input type="email" id="emailInput" placeholder="Admin email">
+    <input type="password" id="passwordInput" placeholder="Password">
+
+    <button id="loginBtn">Login</button>
+
+    <p id="gateErr"></p>
     <p id="gateErr" style="color:#a12727;font-size:.85rem;"></p>
   </div>
 
@@ -229,6 +233,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script>
     // ===== index.html এর মতো একই Firebase কনফিগ এখানে বসান =====
     const firebaseConfig = {
@@ -239,8 +244,6 @@
       messagingSenderId: "1097603669307",
       appId: "1:1097603669307:web:42bf494ebfef8cd4a22b1e"
     };
-    // ===== পাসকোড এখানে বদলে নিন =====
-    const ADMIN_PASS = "egg1234";
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
