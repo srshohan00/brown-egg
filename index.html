@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ডিম অর্ডার করুন</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brown: #7a4a24;
+      --cream: #fff6ea;
+      --gold: #d99a3d;
+      --ink: #3a2a1a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Hind Siliguri', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      margin: 0;
+      padding: 0 0 40px;
+    }
+
+    header {
+      background: var(--brown);
+      color: #fff;
+      padding: 22px 16px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      font-size: .85rem;
+      opacity: .9;
+    }
+
+    .wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+    }
+
+    .stock {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stock .num {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--brown);
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin: 12px 0 4px;
+      font-size: .9rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+
+    .qty-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .qty-row button {
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: 8px;
+      background: var(--gold);
+      color: #fff;
+      font-size: 1.2rem;
+    }
+
+    .qty-row input {
+      text-align: center;
+    }
+
+    .pay-opts {
+      display: flex;
+      gap: 10px;
+    }
+
+    .pay-opts label {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .pay-opts input {
+      width: auto;
+      margin-right: 6px;
+    }
+
+    button.main {
+      width: 100%;
+      background: var(--brown);
+      color: #fff;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 16px;
+      cursor: pointer;
+    }
+
+    button.main:disabled {
+      opacity: .5;
+    }
+
+    .msg {
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-size: .9rem;
+    }
+
+    .msg.ok {
+      background: #e6f7e9;
+      color: #1c6b30;
+    }
+
+    .msg.err {
+      background: #fde8e8;
+      color: #a12727;
+    }
+
+    .order-id {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--brown);
+    }
+
+    h2 {
+      font-size: 1.05rem;
+      margin: 0 0 10px;
+    }
+
+    .review {
+      border-top: 1px solid #eee;
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    .review img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 6px;
+    }
+
+    .stars {
+      font-size: 1.3rem;
+      color: #ccc;
+      cursor: pointer;
+    }
+
+    .stars span.on {
+      color: var(--gold);
+    }
+
+    small.note {
+      color: #888;
+      display: block;
+      margin-top: 10px;
+      font-size: .78rem;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>🥚বাদামি ডিম</h1>
+    <p>ঔষধ ছাড়া পালা মুরগির টাটকা ডিম — বিল্ডিং এর সামনে ডেলিভারি</p>
+  </header>
+  <div class="wrap">
+
+    <div class="card stock">
+      <div>স্টকে আছে</div>
+      <div class="num" id="stockNum">--</div>
+    </div>
+
+    <div class="card">
+      <h2>অর্ডার করুন</h2>
+      <form id="orderForm">
+        <label>আপনার নাম</label>
+        <input type="text" id="fName" required placeholder="পুরো নাম">
+        <label>মোবাইল নম্বর</label>
+        <input type="tel" id="fPhone" required placeholder="01XXXXXXXXX">
+        <label>কয়টি ডিম</label>
+        <div class="qty-row">
+          <button type="button" id="qMinus">−</button>
+          <input type="number" id="fQty" value="1" min="1" readonly>
+          <button type="button" id="qPlus">+</button>
+        </div>
+        <label>পেমেন্ট পদ্ধতি</label>
+        <div class="pay-opts">
+          <label><input type="radio" name="pay" value="online"> অনলাইন পেমেন্ট</label>
+          <label><input type="radio" name="pay" value="cod" checked> ক্যাশ অন ডেলিভারি</label>
+        </div>
+        <button class="main" type="submit" id="submitBtn">অর্ডার কনফার্ম করুন</button>
+        <div id="orderMsg"></div>
+      </form>
+      <small class="note">* অনলাইন পেমেন্ট অপশনে এখনো সরাসরি গেটওয়ে যুক্ত নেই — এটি বেছে নিলে ডেলিভারির সময় বিকাশ/নগদ
+        নম্বর জানিয়ে দেওয়া হবে।</small>
+    </div>
+
+    <div class="card">
+      <h2>রিভিউ দিন</h2>
+      <label>আপনার অর্ডার আইডি</label>
+      <input type="text" id="lookupId" placeholder="যেমন 1007">
+      <button class="main" id="lookupBtn" type="button">খুঁজুন</button>
+      <div id="reviewArea"></div>
+    </div>
+
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script>
+    // ===== এখানে আপনার Firebase কনফিগ বসান (flat-status প্রজেক্টেরটাও ব্যবহার করতে পারেন, নতুন কালেকশন হিসেবে) =====
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "...",
+      appId: "..."
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const stockRef = db.collection('shop').doc('stock');
+    const counterRef = db.collection('shop').doc('counter');
+    const ordersCol = db.collection('orders');
+
+    let currentStock = 0;
+    stockRef.onSnapshot(snap => {
+      currentStock = snap.exists ? (snap.data().count || 0) : 0;
+      document.getElementById('stockNum').textContent = currentStock;
+      document.getElementById('submitBtn').disabled = currentStock <= 0;
+    });
+
+    const qtyInput = document.getElementById('fQty');
+    document.getElementById('qPlus').onclick = () => { if (+qtyInput.value < currentStock) qtyInput.value = +qtyInput.value + 1; };
+    document.getElementById('qMinus').onclick = () => { if (+qtyInput.value > 1) qtyInput.value = +qtyInput.value - 1; };
+
+    function validPhone(p) { return /^(?:\+?88)?01[3-9]\d{8}$/.test(p.trim()); }
+
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('fName').value.trim();
+      const phone = document.getElementById('fPhone').value.trim();
+      const qty = +qtyInput.value;
+      const pay = document.querySelector('input[name=pay]:checked').value;
+      const msgEl = document.getElementById('orderMsg');
+      msgEl.innerHTML = '';
+      if (!name || !validPhone(phone) || qty < 1) {
+        msgEl.innerHTML = '<div class="msg err">সঠিক নাম ও বৈধ বাংলাদেশি নাম্বার দিন।</div>'; return;
+      }
+      document.getElementById('submitBtn').disabled = true;
+      try {
+        const orderId = await db.runTransaction(async (t) => {
+          const stockSnap = await t.get(stockRef);
+          const stock = stockSnap.exists ? (stockSnap.data().count || 0) : 0;
+          if (qty > stock) throw new Error('স্টক কম আছে');
+          const counterSnap = await t.get(counterRef);
+          const last = counterSnap.exists ? (counterSnap.data().last || 1000) : 1000;
+          const newId = last + 1;
+          t.set(counterRef, { last: newId });
+          t.set(stockRef, { count: stock - qty });
+          const newOrderRef = ordersCol.doc(String(newId));
+          t.set(newOrderRef, { orderId: newId, name, phone, qty, pay, status: 'waiting', createdAt: Date.now(), review: null });
+          return newId;
+        });
+        msgEl.innerHTML = `<div class="msg ok">অর্ডার সফল! আপনার অর্ডার আইডি: <span class="order-id">#${orderId}</span><br>৫-১০ মিনিটের মধ্যে ডিম নিয়ে নিচে আসা হবে।</div>`;
+        e.target.reset(); qtyInput.value = 1;
+      } catch (err) {
+        msgEl.innerHTML = `<div class="msg err">${err.message}</div>`;
+      }
+      document.getElementById('submitBtn').disabled = currentStock <= 0;
+    });
+
+    // ---- Review lookup & submit ----
+    document.getElementById('lookupBtn').onclick = async () => {
+      const id = document.getElementById('lookupId').value.trim();
+      const area = document.getElementById('reviewArea');
+      area.innerHTML = '';
+      if (!id) return;
+      const snap = await ordersCol.doc(id).get();
+      if (!snap.exists) { area.innerHTML = '<div class="msg err">অর্ডার খুঁজে পাওয়া যায়নি।</div>'; return; }
+      const o = snap.data();
+      if (o.status !== 'delivered') { area.innerHTML = '<div class="msg err">ডেলিভারি সম্পন্ন হলে রিভিউ দেওয়া যাবে।</div>'; return; }
+      if (o.review) { area.innerHTML = '<div class="msg ok">আপনি ইতিমধ্যে এই অর্ডারে রিভিউ দিয়েছেন। ধন্যবাদ!</div>'; return; }
+      area.innerHTML = `
+    <div class="review">
+      <label>রেটিং</label>
+      <div class="stars" id="starBox">${[1, 2, 3, 4, 5].map(n => `<span data-v="${n}">★</span>`).join('')}</div>
+      <label>মন্তব্য</label>
+      <textarea id="revText" rows="2" placeholder="কেমন লাগলো?"></textarea>
+      <label>ছবি (আবশ্যক)</label>
+      <input type="file" id="revImg" accept="image/*">
+      <button class="main" id="revSubmit" type="button">রিভিউ জমা দিন</button>
+      <div id="revMsg"></div>
+    </div>`;
+      let rating = 0;
+      const stars = area.querySelectorAll('#starBox span');
+      stars.forEach(s => s.onclick = () => { rating = +s.dataset.v; stars.forEach(x => x.classList.toggle('on', +x.dataset.v <= rating)); });
+      area.querySelector('#revSubmit').onclick = async () => {
+        const text = area.querySelector('#revText').value.trim();
+        const file = area.querySelector('#revImg').files[0];
+        const rm = area.querySelector('#revMsg');
+        if (!rating || !file) { rm.innerHTML = '<div class="msg err">রেটিং ও ছবি দুটোই আবশ্যক।</div>'; return; }
+        const b64 = await resizeToBase64(file, 500);
+        await ordersCol.doc(id).update({ review: { rating, text, image: b64, at: Date.now() } });
+        rm.innerHTML = '<div class="msg ok">ধন্যবাদ! আপনার রিভিউ জমা হয়েছে।</div>';
+      };
+    };
+
+    function resizeToBase64(file, maxW) {
+      return new Promise((res) => {
+        const img = new Image();
+        const reader = new FileReader();
+        reader.onload = e => {
+          img.onload = () => {
+            const scale = Math.min(1, maxW / img.width);
+            const c = document.createElement('canvas');
+            c.width = img.width * scale; c.height = img.height * scale;
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            res(c.toDataURL('image/jpeg', 0.6));
+          }; img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  </script>
+</body>
+
+</html>

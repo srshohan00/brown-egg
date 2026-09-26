@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>এডমিন - ডিম অর্ডার</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brown: #7a4a24;
+      --cream: #fff6ea;
+      --gold: #d99a3d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Hind Siliguri', sans-serif;
+      background: var(--cream);
+      margin: 0;
+      padding: 16px;
+    }
+
+    .wrap {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: var(--brown);
+      font-size: 1.2rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+    }
+
+    .stock-edit {
+      display: flex;
+      gap: 8px;
+    }
+
+    .stock-edit input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+
+    .stock-edit button {
+      background: var(--brown);
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+    }
+
+    th,
+    td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+
+    tr {
+      cursor: pointer;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+
+    .b-waiting {
+      background: #fff3d6;
+      color: #8a6100;
+    }
+
+    .b-delivered {
+      background: #e0f5e4;
+      color: #1f7a34;
+    }
+
+    .b-cancelled {
+      background: #fde4e4;
+      color: #a12727;
+    }
+
+    #detail {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    #detail .box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px;
+      max-width: 400px;
+      width: 100%;
+      max-height: 85vh;
+      overflow: auto;
+    }
+
+    #detail .box p {
+      margin: 6px 0;
+    }
+
+    #detail .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    #detail button {
+      flex: 1;
+      padding: 9px;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .a-wait {
+      background: #c98f1c;
+    }
+
+    .a-del {
+      background: #1f7a34;
+    }
+
+    .a-cancel {
+      background: #a12727;
+    }
+
+    .a-close {
+      background: #888;
+    }
+
+    #detail img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 6px;
+    }
+
+    #gate {
+      max-width: 300px;
+      margin: 80px auto;
+      text-align: center;
+    }
+
+    #gate input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+
+    #gate button {
+      background: var(--brown);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="gate">
+    <h1>এডমিন লগইন</h1>
+    <input type="password" id="passInput" placeholder="পাসকোড">
+    <button id="gateBtn">প্রবেশ করুন</button>
+    <p id="gateErr" style="color:#a12727;font-size:.85rem;"></p>
+  </div>
+
+  <div class="wrap" id="mainApp" style="display:none;">
+    <h1>🥚 অর্ডার ম্যানেজমেন্ট</h1>
+
+    <div class="card">
+      <label>বর্তমান স্টক</label>
+      <div class="stock-edit">
+        <input type="number" id="stockInput" min="0">
+        <button id="stockBtn">আপডেট</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>আইডি</th>
+            <th>নাম</th>
+            <th>পরিমাণ</th>
+            <th>অবস্থা</th>
+          </tr>
+        </thead>
+        <tbody id="ordersBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="detail">
+    <div class="box" id="detailBox"></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script>
+    // ===== index.html এর মতো একই Firebase কনফিগ এখানে বসান =====
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "...",
+      appId: "..."
+    };
+    // ===== পাসকোড এখানে বদলে নিন =====
+    const ADMIN_PASS = "egg1234";
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const stockRef = db.collection('shop').doc('stock');
+    const ordersCol = db.collection('orders');
+
+    document.getElementById('gateBtn').onclick = () => {
+      if (document.getElementById('passInput').value === ADMIN_PASS) {
+        document.getElementById('gate').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        initApp();
+      } else {
+        document.getElementById('gateErr').textContent = 'ভুল পাসকোড';
+      }
+    };
+
+    function initApp() {
+      stockRef.onSnapshot(snap => {
+        document.getElementById('stockInput').value = snap.exists ? (snap.data().count || 0) : 0;
+      });
+      document.getElementById('stockBtn').onclick = () => {
+        const v = +document.getElementById('stockInput').value;
+        stockRef.set({ count: v });
+      };
+
+      let allOrders = [];
+      ordersCol.orderBy('orderId', 'desc').limit(300).onSnapshot(snap => {
+        allOrders = snap.docs.map(d => d.data());
+        renderTable();
+      });
+
+      function renderTable() {
+        const body = document.getElementById('ordersBody');
+        body.innerHTML = allOrders.map((o, i) => `
+      <tr data-id="${o.orderId}">
+        <td>${i + 1}</td><td>#${o.orderId}</td><td>${o.name}</td><td>${o.qty}</td>
+        <td><span class="badge b-${o.status}">${label(o.status)}</span></td>
+      </tr>`).join('');
+        body.querySelectorAll('tr').forEach(tr => {
+          tr.onclick = () => openDetail(+tr.dataset.id);
+        });
+      }
+      function label(s) { return s === 'waiting' ? 'অপেক্ষমান' : s === 'delivered' ? 'ডেলিভারড' : 'বাতিল'; }
+
+      function openDetail(id) {
+        const o = allOrders.find(x => x.orderId === id);
+        if (!o) return;
+        const box = document.getElementById('detailBox');
+        box.innerHTML = `
+      <p><b>অর্ডার আইডি:</b> #${o.orderId}</p>
+      <p><b>নাম:</b> ${o.name}</p>
+      <p><b>ফোন:</b> ${o.phone}</p>
+      <p><b>পরিমাণ:</b> ${o.qty} টি ডিম</p>
+      <p><b>পেমেন্ট:</b> ${o.pay === 'online' ? 'অনলাইন' : 'ক্যাশ অন ডেলিভারি'}</p>
+      <p><b>অবস্থা:</b> <span class="badge b-${o.status}">${label(o.status)}</span></p>
+      ${o.review ? `<p><b>রিভিউ:</b> ${'★'.repeat(o.review.rating)} — ${o.review.text || ''}</p><img src="${o.review.image}">` : ''}
+      <div class="actions">
+        <button class="a-wait" data-s="waiting">অপেক্ষমান</button>
+        <button class="a-del" data-s="delivered">ডেলিভারড</button>
+        <button class="a-cancel" data-s="cancelled">বাতিল</button>
+      </div>
+      <div class="actions"><button class="a-close" id="closeDetail">বন্ধ করুন</button></div>`;
+        box.querySelectorAll('[data-s]').forEach(btn => {
+          btn.onclick = () => ordersCol.doc(String(id)).update({ status: btn.dataset.s });
+        });
+        box.querySelector('#closeDetail').onclick = () => document.getElementById('detail').style.display = 'none';
+        document.getElementById('detail').style.display = 'flex';
+      }
+    }
+  </script>
+</body>
+
+</html>
