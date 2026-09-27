@@ -71,6 +71,34 @@
       color: var(--brown);
     }
 
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #eee;
+      font-size: .9rem;
+    }
+
+    .price-row b {
+      color: var(--brown);
+    }
+
+    .total-box {
+      background: #fff8ec;
+      border: 1px dashed var(--gold);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 10px;
+      text-align: center;
+      font-size: 1rem;
+    }
+
+    .total-box b {
+      color: var(--brown);
+      font-size: 1.2rem;
+    }
+
     label {
       display: block;
       font-weight: 600;
@@ -107,26 +135,6 @@
 
     .qty-row input {
       text-align: center;
-    }
-
-    .pay-opts {
-      display: flex;
-      gap: 10px;
-    }
-
-    .pay-opts label {
-      flex: 1;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    .pay-opts input {
-      width: auto;
-      margin-right: 6px;
     }
 
     button.main {
@@ -202,6 +210,19 @@
       margin-top: 10px;
       font-size: .78rem;
     }
+
+    #payBox {
+      display: none;
+      background: #fff8ec;
+      border: 1px dashed var(--gold);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 8px;
+    }
+
+    #payBox b {
+      color: var(--brown);
+    }
   </style>
 </head>
 
@@ -212,9 +233,13 @@
   </header>
   <div class="wrap">
 
-    <div class="card stock">
-      <div>স্টকে আছে</div>
-      <div class="num" id="stockNum">--</div>
+    <div class="card">
+      <div class="stock">
+        <div>স্টকে আছে</div>
+        <div class="num" id="stockNum">--</div>
+      </div>
+      <div class="price-row"><span>প্রতি হালি (৪টি)</span> <b>৳<span id="priceHali">--</span></b></div>
+      <div class="price-row"><span>প্রতি পিস</span> <b>৳<span id="pricePiece">--</span></b></div>
     </div>
 
     <div class="card">
@@ -230,16 +255,23 @@
           <input type="number" id="fQty" value="1" min="1" readonly>
           <button type="button" id="qPlus">+</button>
         </div>
+        <div class="total-box">মোট: <span id="totalQtyText">১ পিস</span> = <b>৳<span id="totalPrice">0</span></b></div>
         <label>পেমেন্ট পদ্ধতি</label>
-        <div class="pay-opts">
-          <label><input type="radio" name="pay" value="online"> অনলাইন পেমেন্ট</label>
-          <label><input type="radio" name="pay" value="cod" checked> ক্যাশ অন ডেলিভারি</label>
+        <select id="fPay">
+          <option value="cod">ক্যাশ অন ডেলিভারি</option>
+          <option value="bkash">বিকাশ (Send Money)</option>
+          <option value="nagad">নগদ (Send Money)</option>
+        </select>
+        <div id="payBox">
+          <p>এই পার্সোনাল নম্বরে <b>Send Money</b> করুন: <b id="payNumber"></b></p>
+          <label>Transaction ID (TrxID)</label>
+          <input type="text" id="fTrxId" placeholder="যেমন 9AB3XYZ12">
         </div>
         <button class="main" type="submit" id="submitBtn">অর্ডার কনফার্ম করুন</button>
         <div id="orderMsg"></div>
       </form>
-      <small class="note">* অনলাইন পেমেন্ট অপশনে এখনো সরাসরি গেটওয়ে যুক্ত নেই — এটি বেছে নিলে ডেলিভারির সময় বিকাশ/নগদ
-        নম্বর জানিয়ে দেওয়া হবে।</small>
+      <small class="note">* এখানে bKash/Nagad এর সরাসরি অটোমেটিক গেটওয়ে নেই (তার জন্য বিজনেস মার্চেন্ট অ্যাকাউন্ট লাগে)
+        — আপনি পার্সোনাল নম্বরে Send Money করে TrxID দিলে এডমিন প্যানেলে সেটা দেখে অর্ডার কনফার্ম করা হয়।</small>
     </div>
 
     <div class="card">
@@ -255,7 +287,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script>
-    // ===== এখানে আপনার Firebase কনফিগ বসান (flat-status প্রজেক্টেরটাও ব্যবহার করতে পারেন, নতুন কালেকশন হিসেবে) =====
     const firebaseConfig = {
       apiKey: "AIzaSyCSVfNQG3bFfxR1r4E6ND2iqQDU9R4rkm8",
       authDomain: "brown-egg.firebaseapp.com",
@@ -267,33 +298,67 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // ===== আপনার পার্সোনাল বিকাশ/নগদ নম্বর এখানে বসান =====
+    const PAY_NUMBERS = { bkash: "01XXXXXXXXX", nagad: "01XXXXXXXXX" };
+    // ===== Google Apps Script Web App এর URL এখানে বসান (Sheet + Email নোটিফিকেশনের জন্য) =====
+    const NOTIFY_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
     const stockRef = db.collection('shop').doc('stock');
+    const priceRef = db.collection('shop').doc('price');
     const counterRef = db.collection('shop').doc('counter');
     const ordersCol = db.collection('orders');
 
-    let currentStock = 0;
+    let currentStock = 0, currentPerPiece = 0;
     stockRef.onSnapshot(snap => {
       currentStock = snap.exists ? (snap.data().count || 0) : 0;
       document.getElementById('stockNum').textContent = currentStock;
       document.getElementById('submitBtn').disabled = currentStock <= 0;
     });
+    function haliText(qty) {
+      const h = qty / 4;
+      const hStr = Number.isInteger(h) ? h : h.toFixed(2).replace(/0$/, '');
+      return `${qty} পিস (${hStr} হালি)`;
+    }
+    priceRef.onSnapshot(snap => {
+      const perHali = snap.exists ? (snap.data().perHali || 0) : 0;
+      currentPerPiece = perHali / 4;
+      document.getElementById('priceHali').textContent = perHali;
+      document.getElementById('pricePiece').textContent = currentPerPiece.toFixed(2).replace(/\.00$/, '');
+      updateTotal();
+    });
 
     const qtyInput = document.getElementById('fQty');
-    document.getElementById('qPlus').onclick = () => { if (+qtyInput.value < currentStock) qtyInput.value = +qtyInput.value + 1; };
-    document.getElementById('qMinus').onclick = () => { if (+qtyInput.value > 1) qtyInput.value = +qtyInput.value - 1; };
+    function updateTotal() {
+      document.getElementById('totalQtyText').textContent = haliText(+qtyInput.value || 0);
+      document.getElementById('totalPrice').textContent = (currentPerPiece * (+qtyInput.value || 0)).toFixed(2).replace(/\.00$/, '');
+    }
+    document.getElementById('qPlus').onclick = () => { if (+qtyInput.value < currentStock) { qtyInput.value = +qtyInput.value + 1; updateTotal(); } };
+    document.getElementById('qMinus').onclick = () => { if (+qtyInput.value > 1) { qtyInput.value = +qtyInput.value - 1; updateTotal(); } };
+
+    const payBox = document.getElementById('payBox');
+    document.getElementById('fPay').onchange = (e) => {
+      const v = e.target.value;
+      if (v === 'cod') { payBox.style.display = 'none'; }
+      else { payBox.style.display = 'block'; document.getElementById('payNumber').textContent = PAY_NUMBERS[v]; }
+    };
 
     function validPhone(p) { return /^(?:\+?88)?01[3-9]\d{8}$/.test(p.trim()); }
+    function payLabel(p) { return p === 'bkash' ? 'বিকাশ' : p === 'nagad' ? 'নগদ' : 'ক্যাশ অন ডেলিভারি'; }
 
     document.getElementById('orderForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('fName').value.trim();
       const phone = document.getElementById('fPhone').value.trim();
       const qty = +qtyInput.value;
-      const pay = document.querySelector('input[name=pay]:checked').value;
+      const pay = document.getElementById('fPay').value;
+      const trxId = document.getElementById('fTrxId').value.trim();
       const msgEl = document.getElementById('orderMsg');
       msgEl.innerHTML = '';
       if (!name || !validPhone(phone) || qty < 1) {
         msgEl.innerHTML = '<div class="msg err">সঠিক নাম ও বৈধ বাংলাদেশি নাম্বার দিন।</div>'; return;
+      }
+      if (pay !== 'cod' && !trxId) {
+        msgEl.innerHTML = '<div class="msg err">বিকাশ/নগদ সিলেক্ট করলে TrxID দিতে হবে।</div>'; return;
       }
       document.getElementById('submitBtn').disabled = true;
       try {
@@ -306,19 +371,21 @@
           const newId = last + 1;
           t.set(counterRef, { last: newId });
           t.set(stockRef, { count: stock - qty });
-          const newOrderRef = ordersCol.doc(String(newId));
-          t.set(newOrderRef, { orderId: newId, name, phone, qty, pay, status: 'waiting', createdAt: Date.now(), review: null });
-          return newId;
+          const unitPrice = currentPerPiece, totalPrice = +(currentPerPiece * qty).toFixed(2);
+          t.set(ordersCol.doc(String(newId)), { orderId: newId, name, phone, qty, pay, trxId: trxId || null, unitPrice, totalPrice, status: 'waiting', createdAt: Date.now(), review: null });
+          return { newId, unitPrice, totalPrice };
         });
-        msgEl.innerHTML = `<div class="msg ok">অর্ডার সফল! আপনার অর্ডার আইডি: <span class="order-id">#${orderId}</span><br>৫-১০ মিনিটের মধ্যে ডিম নিয়ে নিচে আসা হবে।</div>`;
-        e.target.reset(); qtyInput.value = 1;
+        msgEl.innerHTML = `<div class="msg ok">অর্ডার সফল! আপনার অর্ডার আইডি: <span class="order-id">#${orderId.newId}</span><br>মোট মূল্য: ৳${orderId.totalPrice}<br>৫-১০ মিনিটের মধ্যে ডিম নিয়ে নিচে আসা হবে।</div>`;
+        if (NOTIFY_URL && NOTIFY_URL.startsWith('http')) {
+          fetch(NOTIFY_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ orderId: orderId.newId, name, phone, qty, pay: payLabel(pay), trxId, totalPrice: orderId.totalPrice }) }).catch(() => { });
+        }
+        e.target.reset(); qtyInput.value = 1; payBox.style.display = 'none'; updateTotal();
       } catch (err) {
         msgEl.innerHTML = `<div class="msg err">${err.message}</div>`;
       }
       document.getElementById('submitBtn').disabled = currentStock <= 0;
     });
 
-    // ---- Review lookup & submit ----
     document.getElementById('lookupBtn').onclick = async () => {
       const id = document.getElementById('lookupId').value.trim();
       const area = document.getElementById('reviewArea');
